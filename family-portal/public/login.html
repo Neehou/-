@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>登录 - 东华倪家</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .login-card .logo {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        .login-card h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #5B3E96;
+            margin-bottom: 4px;
+        }
+
+        .login-card .subtitle {
+            font-size: 14px;
+            color: #8B7AAF;
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4A5568;
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #E2E8F0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: transform 0.15s, box-shadow 0.15s;
+            font-family: inherit;
+        }
+
+        .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .error-msg {
+            background: #FEF2F2;
+            color: #DC2626;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .error-msg.show { display: block; }
+
+        .toggle-mode {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #8B7AAF;
+        }
+
+        .toggle-mode a {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .toggle-mode a:hover { color: #764ba2; }
+
+        .setup-note {
+            background: #FEF3C7;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #92400E;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">🏠</div>
+        <h1>东华倪家</h1>
+        <div class="subtitle" id="mode-subtitle">请输入账号密码</div>
+
+        <div class="error-msg" id="error-msg"></div>
+
+        <!-- 登录模式 -->
+        <form id="login-form" autocomplete="off">
+            <div class="form-group">
+                <label>账号</label>
+                <input type="text" id="login-username" placeholder="输入账号" maxlength="30" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="login-password" placeholder="输入密码" maxlength="50" autocomplete="off">
+            </div>
+            <button type="submit" class="btn-submit" id="btn-login">登 录</button>
+        </form>
+
+        <!-- 首次设置模式 -->
+        <form id="setup-form" style="display:none" autocomplete="off">
+            <div class="setup-note">
+                🎉 欢迎使用东华倪家！这是第一次使用，请设置管理员账号和密码。
+            </div>
+            <div class="form-group">
+                <label>设置账号</label>
+                <input type="text" id="setup-username" placeholder="例如：管理员" maxlength="30" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>设置密码</label>
+                <input type="password" id="setup-password" placeholder="至少4个字符" maxlength="50" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>确认密码</label>
+                <input type="password" id="setup-password2" placeholder="再次输入密码" maxlength="50" autocomplete="off">
+            </div>
+            <button type="submit" class="btn-submit" id="btn-setup">创建账号</button>
+        </form>
+
+        <div class="toggle-mode" id="toggle-area" style="display:none">
+            <span id="toggle-text">首次使用？</span>
+            <a id="toggle-link" href="javascript:void(0)">创建账号</a>
+        </div>
+    </div>
+
+    <script>
+        let needsSetup = false;
+
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/auth/status');
+                const data = await res.json();
+
+                if (data.logged_in) {
+                    // 已登录，直接跳转到主页
+                    window.location.href = '/';
+                    return;
+                }
+
+                needsSetup = data.needs_setup;
+
+                if (needsSetup) {
+                    // 显示设置模式
+                    document.getElementById('mode-subtitle').textContent = '首次使用，请设置管理员账号';
+                    document.getElementById('login-form').style.display = 'none';
+                    document.getElementById('setup-form').style.display = 'block';
+                    document.getElementById('toggle-area').style.display = 'none';
+                } else {
+                    // 显示登录模式
+                    document.getElementById('mode-subtitle').textContent = '请输入账号密码';
+                    document.getElementById('login-form').style.display = 'block';
+                    document.getElementById('setup-form').style.display = 'none';
+                    document.getElementById('toggle-area').style.display = 'none'; // 隐藏切换，只能管理员登录
+                }
+            } catch (err) {
+                showError('网络连接失败');
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.textContent = msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        // 登录表单
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!username || !password) {
+                showError('请输入账号和密码');
+                return;
+            }
+
+            const btn = document.getElementById('btn-login');
+            btn.disabled = true;
+            btn.textContent = '登录中...';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    window.location.href = '/';
+                } else {
+                    showError(data.error || '登录失败');
+                }
+            } catch (err) {
+                showError('网络连接失败');
+            }
+
+            btn.disabled = false;
+            btn.textContent = '登 录';
+        });
+
+        // 设置表单
+        document.getElementById('setup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('setup-username').value.trim();
+            const password = document.getElementById('setup-password').value;
+            const password2 = document.getElementById('setup-password2').value;
+
+            if (!username || username.length < 2) {
+                showError('账号至少2个字符');
+                return;
+            }
+            if (!password || password.length < 4) {
+                showError('密码至少4个字符');
+                return;
+            }
+            if (password !== password2) {
+                showError('两次密码不一致');
+                return;
+            }
+
+            const btn = document.getElementById('btn-setup');
+            btn.disabled = true;
+            btn.textContent = '创建中...';
+
+            try {
+                const res = await fetch('/api/auth/setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    window.location.href = '/';
+                } else {
+                    showError(data.error || '设置失败');
+                }
+            } catch (err) {
+                showError('网络连接失败');
+            }
+
+            btn.disabled = false;
+            btn.textContent = '创建账号';
+        });
+
+        // 回车提交
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const activeForm = needsSetup ?
+                    document.getElementById('setup-form') :
+                    document.getElementById('login-form');
+                if (activeForm.style.display !== 'none') {
+                    activeForm.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+
+        // 初始化
+        checkStatus();
+    </script>
+</body>
+</html>

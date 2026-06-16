@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>劳动统计 - 东华倪家</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 身份选择遮罩 -->
+    <div id="identity-gate" class="hidden"></div>
+
+    <!-- 主内容 -->
+    <div id="main-content" style="display:none">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <span class="icon">🏠</span> 东华倪家
+            </div>
+            <div class="nav-links">
+                <a href="/">📋 任务</a>
+                <a href="/stats" class="active">📊 统计</a>
+                <a href="/photos">📷 相册</a>
+            </div>
+            <div class="nav-user">
+                <div class="user-switcher">
+                    <button class="current-user-badge">👤 选择身份</button>
+                    <div class="user-dropdown"></div>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="doLogout()" style="color:var(--danger);border-color:var(--danger)">退出</button>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="stats-header">
+                <h1>📊 家庭劳动统计</h1>
+            </div>
+
+            <div class="stats-summary" id="summary-cards"></div>
+
+            <div class="champion-section" id="champion-section" style="display:none">
+                <div class="crown">👑</div>
+                <div class="champion-name" id="champion-name"></div>
+                <div class="champion-score" id="champion-score"></div>
+            </div>
+
+            <div class="ranking-list" id="ranking-list">
+                <h3>🏆 家庭贡献排行</h3>
+                <div id="ranking-content">
+                    <div class="empty-state">
+                        <div class="empty-icon">📊</div>
+                        <p>暂无数据</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <h3>📈 任务完成统计</h3>
+                <div class="bar-chart" id="bar-chart">
+                    <div class="empty-state"><p>暂无数据</p></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">🏠 东华倪家 — 让家更有爱</div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function onUserChanged() {
+            loadStats();
+        }
+
+        async function loadStats() {
+            if (!getCurrentUserId()) return;
+            try {
+                const data = await api('/stats');
+                renderStats(data);
+            } catch {}
+        }
+
+        function renderStats(data) {
+            const { members: stats, summary } = data;
+
+            document.getElementById('summary-cards').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-num">${summary.total_tasks}</div>
+                    <div class="stat-label">📋 总任务</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num">${summary.total_done}</div>
+                    <div class="stat-label">✅ 已完成</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num">${summary.total_photos}</div>
+                    <div class="stat-label">📷 照片</div>
+                </div>
+            `;
+
+            if (stats.length > 0 && stats[0].total_score > 0) {
+                document.getElementById('champion-section').style.display = 'block';
+                document.getElementById('champion-name').textContent = stats[0].name;
+                document.getElementById('champion-score').textContent =
+                    `总积分：${stats[0].total_score} 分（完成 ${stats[0].done_count} 个任务 + 发布 ${stats[0].created_count} 个任务 + ${stats[0].photo_count} 张照片）`;
+            } else {
+                document.getElementById('champion-section').style.display = 'none';
+            }
+
+            const rankEmojis = ['🥇', '🥈', '🥉'];
+            const rankClasses = ['gold', 'silver', 'bronze'];
+
+            if (stats.length === 0) {
+                document.getElementById('ranking-content').innerHTML = `
+                    <div class="empty-state"><div class="empty-icon">📊</div><p>暂无数据</p></div>
+                `;
+            } else {
+                document.getElementById('ranking-content').innerHTML = stats.map((s, i) => `
+                    <div class="rank-item">
+                        <div class="rank-number ${i < 3 ? rankClasses[i] : ''}">
+                            ${i < 3 ? rankEmojis[i] : (i + 1)}
+                        </div>
+                        <div class="rank-avatar" style="background:${s.color}">
+                            ${s.name[0]}
+                        </div>
+                        <div class="rank-info">
+                            <div class="rank-name">${s.name}</div>
+                            <div class="rank-detail">
+                                完成 ${s.done_count} · 发布 ${s.created_count} · 进行中 ${s.ongoing_count} · 照片 ${s.photo_count}
+                            </div>
+                        </div>
+                        <div class="rank-score">${s.total_score} 分</div>
+                    </div>
+                `).join('');
+            }
+
+            const maxDone = Math.max(...stats.map(s => s.done_count), 1);
+            const chartHeight = 200;
+
+            if (stats.length === 0) {
+                document.getElementById('bar-chart').innerHTML = '<div class="empty-state"><p>暂无数据</p></div>';
+            } else {
+                document.getElementById('bar-chart').innerHTML = stats.map(s => {
+                    const height = Math.max((s.done_count / maxDone) * chartHeight, 4);
+                    return `
+                        <div class="bar-group">
+                            <div class="bar-value">${s.done_count}</div>
+                            <div class="bar" style="height:${height}px;background:${s.color}"></div>
+                            <div class="bar-label">${s.name}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+    </script>
+</body>
+</html>

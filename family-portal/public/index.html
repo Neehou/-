@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>任务看板 - 东华倪家</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 身份选择遮罩 -->
+    <div id="identity-gate" class="hidden"></div>
+
+    <!-- 主内容 -->
+    <div id="main-content" style="display:none">
+        <!-- 导航栏 -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <span class="icon">🏠</span> 东华倪家
+            </div>
+            <div class="nav-links">
+                <a href="/" class="active">📋 任务</a>
+                <a href="/stats">📊 统计</a>
+                <a href="/photos">📷 相册</a>
+            </div>
+            <div class="nav-user">
+                <div class="user-switcher">
+                    <button class="current-user-badge">👤 选择身份</button>
+                    <div class="user-dropdown"></div>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="doLogout()" style="color:var(--danger);border-color:var(--danger)">退出</button>
+            </div>
+        </nav>
+
+        <div class="container">
+            <!-- 添加任务 -->
+            <div class="add-task-section">
+                <h3>📝 发布新任务</h3>
+                <div class="add-task-form">
+                    <div class="form-group">
+                        <label>任务标题 *</label>
+                        <input class="form-input title-input" id="task-title" placeholder="例如：今天谁来洗碗？" maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label>任务描述</label>
+                        <input class="form-input desc-input" id="task-desc" placeholder="补充说明（可选）" maxlength="500">
+                    </div>
+                    <button class="btn btn-primary" id="btn-add-task" style="height:42px">发布任务</button>
+                </div>
+            </div>
+
+            <!-- 任务看板 -->
+            <div class="taskboard">
+                <!-- 待办 -->
+                <div class="board-column todo">
+                    <h2>⏳ 待办任务 <span class="badge badge-primary" id="todo-count">0</span></h2>
+                    <div id="todo-list">
+                        <div class="empty-state">
+                            <div class="empty-icon">🎉</div>
+                            <p>暂无待办任务</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已完成 -->
+                <div class="board-column done">
+                    <h2>✅ 已完成 <span class="badge badge-success" id="done-count">0</span></h2>
+                    <div id="done-list">
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>还没有完成的任务</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">🏠 东华倪家 — 让家更有爱</div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function onUserChanged() {
+            loadAllTasks();
+        }
+
+        async function loadAllTasks() {
+            if (!getCurrentUserId()) return;
+            try {
+                const tasks = await api('/tasks');
+                renderTasks(tasks);
+            } catch {}
+        }
+
+        function renderTasks(tasks) {
+            const todoList = document.getElementById('todo-list');
+            const doneList = document.getElementById('done-list');
+
+            const todoTasks = tasks.filter(t => t.status === 'todo');
+            const doneTasks = tasks.filter(t => t.status === 'done');
+
+            document.getElementById('todo-count').textContent = todoTasks.length;
+            document.getElementById('done-count').textContent = doneTasks.length;
+
+            if (todoTasks.length === 0) {
+                todoList.innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><p>暂无待办任务</p></div>';
+            } else {
+                todoList.innerHTML = todoTasks.map(t => renderTaskCard(t, 'todo')).join('');
+            }
+
+            if (doneTasks.length === 0) {
+                doneList.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>还没有完成的任务</p></div>';
+            } else {
+                doneList.innerHTML = doneTasks.map(t => renderTaskCard(t, 'done')).join('');
+            }
+
+            bindTaskEvents();
+        }
+
+        function renderTaskCard(task, type) {
+            const creatorTag = `<span class="task-tag tag-creator">📢 ${task.creator_name}</span>`;
+            const assigneeTag = task.assignee_name
+                ? `<span class="task-tag tag-assignee">👤 ${task.assignee_name}</span>`
+                : '';
+
+            let actions = '';
+            if (type === 'todo') {
+                if (!task.assigned_to) {
+                    actions += `<button class="btn btn-outline btn-sm btn-claim" data-id="${task.id}">🙋 我来做</button>`;
+                } else {
+                    actions += `<button class="btn btn-success btn-sm btn-complete" data-id="${task.id}">✅ 完成</button>`;
+                    actions += `<button class="btn btn-outline btn-sm btn-unclaim" data-id="${task.id}">↩ 放弃</button>`;
+                }
+            } else {
+                actions += `<button class="btn btn-outline btn-sm btn-reopen" data-id="${task.id}">🔄 重新打开</button>`;
+            }
+            actions += `<button class="btn btn-outline btn-sm btn-delete-task" data-id="${task.id}" style="color:var(--danger)">🗑</button>`;
+
+            const timeStr = type === 'done' && task.completed_at
+                ? `✅ ${task.completed_at}`
+                : `📅 ${task.created_at}`;
+
+            return `
+                <div class="task-card" id="task-${task.id}">
+                    <div class="task-card-header">
+                        <span class="task-title">${escapeHtml(task.title)}</span>
+                    </div>
+                    ${task.description ? `<div class="task-desc">${escapeHtml(task.description)}</div>` : ''}
+                    <div class="task-meta">
+                        ${creatorTag}
+                        ${assigneeTag}
+                        <span class="task-tag tag-time">${timeStr}</span>
+                    </div>
+                    <div class="task-actions">${actions}</div>
+                </div>
+            `;
+        }
+
+        function bindTaskEvents() {
+            document.querySelectorAll('.btn-claim').forEach(btn => {
+                btn.onclick = async () => {
+                    const uid = getCurrentUserId();
+                    if (!uid) { showToast('请先选择家庭成员', 'error'); return; }
+                    try {
+                        await api(`/tasks/${btn.dataset.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ assigned_to: uid })
+                        });
+                        showToast('任务已认领！', 'success');
+                        loadAllTasks();
+                    } catch {}
+                };
+            });
+
+            document.querySelectorAll('.btn-complete').forEach(btn => {
+                btn.onclick = async () => {
+                    try {
+                        await api(`/tasks/${btn.dataset.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ status: 'done' })
+                        });
+                        showToast('任务完成！太棒了！🎉', 'success');
+                        loadAllTasks();
+                    } catch {}
+                };
+            });
+
+            document.querySelectorAll('.btn-unclaim').forEach(btn => {
+                btn.onclick = async () => {
+                    try {
+                        await api(`/tasks/${btn.dataset.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ assigned_to: null })
+                        });
+                        showToast('已放弃认领', 'info');
+                        loadAllTasks();
+                    } catch {}
+                };
+            });
+
+            document.querySelectorAll('.btn-reopen').forEach(btn => {
+                btn.onclick = async () => {
+                    try {
+                        await api(`/tasks/${btn.dataset.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ status: 'todo' })
+                        });
+                        showToast('任务已重新打开', 'info');
+                        loadAllTasks();
+                    } catch {}
+                };
+            });
+
+            document.querySelectorAll('.btn-delete-task').forEach(btn => {
+                btn.onclick = async () => {
+                    if (!confirm('确定要删除这个任务吗？')) return;
+                    try {
+                        await api(`/tasks/${btn.dataset.id}`, { method: 'DELETE' });
+                        showToast('任务已删除', 'info');
+                        loadAllTasks();
+                    } catch {}
+                };
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('btn-add-task').addEventListener('click', async () => {
+            const uid = getCurrentUserId();
+            if (!uid) {
+                showToast('请先在右上角选择家庭成员', 'error');
+                return;
+            }
+            const title = document.getElementById('task-title').value.trim();
+            if (!title) {
+                showToast('请填写任务标题', 'error');
+                return;
+            }
+            try {
+                await api('/tasks', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        title,
+                        description: document.getElementById('task-desc').value.trim(),
+                        created_by: uid
+                    })
+                });
+                showToast('任务发布成功！', 'success');
+                document.getElementById('task-title').value = '';
+                document.getElementById('task-desc').value = '';
+                loadAllTasks();
+            } catch {}
+        });
+
+        document.getElementById('task-title').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('btn-add-task').click();
+        });
+    </script>
+</body>
+</html>

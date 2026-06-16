@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>家庭相册 - 东华倪家</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 身份选择遮罩 -->
+    <div id="identity-gate" class="hidden"></div>
+
+    <!-- 主内容 -->
+    <div id="main-content" style="display:none">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <span class="icon">🏠</span> 东华倪家
+            </div>
+            <div class="nav-links">
+                <a href="/">📋 任务</a>
+                <a href="/stats">📊 统计</a>
+                <a href="/photos" class="active">📷 相册</a>
+            </div>
+            <div class="nav-user">
+                <div class="user-switcher">
+                    <button class="current-user-badge">👤 选择身份</button>
+                    <div class="user-dropdown"></div>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="doLogout()" style="color:var(--danger);border-color:var(--danger)">退出</button>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="upload-section">
+                <h3>📷 上传家庭照片</h3>
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-icon">📁</div>
+                    <p>点击或拖拽照片到此处上传</p>
+                    <p style="font-size:12px;color:#94A3B8">支持 JPG、PNG、GIF、WebP 格式</p>
+                    <input type="file" id="photo-input" accept="image/*">
+                </div>
+                <div class="upload-form-row">
+                    <div class="form-group">
+                        <label>照片说明（可选）</label>
+                        <input class="form-input" id="photo-caption" placeholder="这张照片的故事..." style="min-width:260px" maxlength="200">
+                    </div>
+                    <button class="btn btn-primary" id="btn-upload" style="height:42px">上传照片</button>
+                </div>
+                <div id="upload-preview" style="margin-top:12px;display:none;align-items:center">
+                    <img id="preview-img" style="max-height:150px;border-radius:8px">
+                    <span id="preview-name" style="margin-left:8px;font-size:13px;color:var(--text-light)"></span>
+                </div>
+            </div>
+
+            <div class="photo-grid" id="photo-grid">
+                <div class="empty-state">
+                    <div class="empty-icon">📷</div>
+                    <p>还没有家庭照片，快来上传第一张吧！</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 灯箱 -->
+        <div class="lightbox" id="lightbox">
+            <button class="lightbox-close" id="lightbox-close">&times;</button>
+            <img id="lightbox-img" src="" alt="照片">
+        </div>
+
+        <div class="footer">🏠 东华倪家 — 让家更有爱</div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let selectedFile = null;
+
+        function onUserChanged() {
+            loadPhotos();
+        }
+
+        document.getElementById('upload-area').addEventListener('click', () => {
+            document.getElementById('photo-input').click();
+        });
+
+        const uploadArea = document.getElementById('upload-area');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.background = 'var(--primary-light)';
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = 'var(--border)';
+            uploadArea.style.background = '';
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--border)';
+            uploadArea.style.background = '';
+            if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]);
+        });
+
+        document.getElementById('photo-input').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
+        });
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                showToast('请选择图片文件', 'error');
+                return;
+            }
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('preview-img').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            document.getElementById('preview-name').textContent = file.name;
+            document.getElementById('upload-preview').style.display = 'flex';
+        }
+
+        document.getElementById('btn-upload').addEventListener('click', async () => {
+            const uid = getCurrentUserId();
+            if (!uid) { showToast('请先选择身份', 'error'); return; }
+            if (!selectedFile) { showToast('请先选择照片', 'error'); return; }
+
+            const formData = new FormData();
+            formData.append('photo', selectedFile);
+            formData.append('uploaded_by', uid);
+            formData.append('caption', document.getElementById('photo-caption').value.trim());
+
+            try {
+                const res = await fetch('/api/photos', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '上传失败');
+                showToast('照片上传成功！', 'success');
+                selectedFile = null;
+                document.getElementById('upload-preview').style.display = 'none';
+                document.getElementById('photo-caption').value = '';
+                document.getElementById('photo-input').value = '';
+                loadPhotos();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
+        async function loadPhotos() {
+            if (!getCurrentUserId()) return;
+            try {
+                const photos = await api('/photos');
+                renderPhotos(photos);
+            } catch {}
+        }
+
+        function renderPhotos(photos) {
+            const grid = document.getElementById('photo-grid');
+            if (photos.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📷</div><p>还没有家庭照片，快来上传第一张吧！</p></div>';
+                return;
+            }
+            grid.innerHTML = photos.map(p => `
+                <div class="photo-card" id="photo-${p.id}">
+                    <button class="photo-delete" data-id="${p.id}" title="删除">×</button>
+                    <img src="/uploads/${p.filename}" alt="${escapeHtml(p.caption || p.original_name)}" loading="lazy" onclick="openLightbox('/uploads/${p.filename}')">
+                    <div class="photo-info">
+                        <div class="photo-caption">${escapeHtml(p.caption || '未命名')}</div>
+                        <div class="photo-meta">
+                            <span style="display:flex;align-items:center;gap:4px">
+                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.uploader_color}"></span>
+                                ${p.uploader_name}
+                            </span>
+                            <span>${p.created_at}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.photo-delete').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (!confirm('确定要删除这张照片吗？')) return;
+                    try {
+                        await api(`/photos/${btn.dataset.id}`, { method: 'DELETE' });
+                        showToast('照片已删除', 'info');
+                        loadPhotos();
+                    } catch {}
+                });
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.add('show');
+        }
+
+        document.getElementById('lightbox').addEventListener('click', (e) => {
+            if (e.target !== document.getElementById('lightbox-img')) {
+                document.getElementById('lightbox').classList.remove('show');
+            }
+        });
+        document.getElementById('lightbox-close').addEventListener('click', () => {
+            document.getElementById('lightbox').classList.remove('show');
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') document.getElementById('lightbox').classList.remove('show');
+        });
+    </script>
+</body>
+</html>
