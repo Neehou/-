@@ -56,20 +56,21 @@ function showToast(message, type = 'info') {
 
 // ========== API 封装 ==========
 async function api(url, options = {}) {
-    try {
-        const res = await fetch(API_BASE + url, {
-            headers: { 'Content-Type': 'application/json', ...options.headers },
-            ...options,
-        });
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data.error || '请求失败');
-        }
-        return data;
-    } catch (err) {
-        showToast(err.message, 'error');
-        throw err;
+    const headers = { 'Content-Type': 'application/json' };
+    if (options.headers) {
+        Object.assign(headers, options.headers);
+        delete options.headers;
     }
+    // 排除 body 为 FormData 时不设置 Content-Type（让浏览器自动设置）
+    if (options.body instanceof FormData) {
+        delete headers['Content-Type'];
+    }
+    const res = await fetch(API_BASE + url, { headers, ...options });
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.error || '请求失败');
+    }
+    return data;
 }
 
 // ========== 成员加载 ==========
@@ -85,12 +86,13 @@ async function loadMembers() {
 
 // ========== 身份优先选择遮罩 ==========
 async function showIdentityGate() {
-    // 如果已有身份，跳过
+    // 如果已有身份，跳过门并触发数据加载
     if (currentUser) {
         const gate = document.getElementById('identity-gate');
         if (gate) gate.classList.add('hidden');
         const main = document.getElementById('main-content');
         if (main) main.style.display = '';
+        onUserChanged();
         return;
     }
 

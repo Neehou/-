@@ -19,7 +19,6 @@
             <div class="nav-links">
                 <a href="/">📋 任务</a>
                 <a href="/stats" class="active">📊 统计</a>
-                <a href="/photos">📷 相册</a>
             </div>
             <div class="nav-user">
                 <div class="user-switcher">
@@ -91,8 +90,8 @@
                     <div class="stat-label">✅ 已完成</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-num">${summary.total_photos}</div>
-                    <div class="stat-label">📷 照片</div>
+                    <div class="stat-num">${summary.total_tasks - summary.total_done}</div>
+                    <div class="stat-label">⏳ 进行中</div>
                 </div>
             `;
 
@@ -100,7 +99,7 @@
                 document.getElementById('champion-section').style.display = 'block';
                 document.getElementById('champion-name').textContent = stats[0].name;
                 document.getElementById('champion-score').textContent =
-                    `总积分：${stats[0].total_score} 分（完成 ${stats[0].done_count} 个任务 + 发布 ${stats[0].created_count} 个任务 + ${stats[0].photo_count} 张照片）`;
+                    `总积分：${stats[0].total_score} 分（完成 ${stats[0].done_count} 个任务 + 发布 ${stats[0].created_count} 个任务）`;
             } else {
                 document.getElementById('champion-section').style.display = 'none';
             }
@@ -124,7 +123,7 @@
                         <div class="rank-info">
                             <div class="rank-name">${s.name}</div>
                             <div class="rank-detail">
-                                完成 ${s.done_count} · 发布 ${s.created_count} · 进行中 ${s.ongoing_count} · 照片 ${s.photo_count}
+                                完成 ${s.done_count} · 发布 ${s.created_count} · 进行中 ${s.ongoing_count}
                             </div>
                         </div>
                         <div class="rank-score">${s.total_score} 分</div>

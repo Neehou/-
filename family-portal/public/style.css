@@ -6,19 +6,19 @@
 }
 
 :root {
-    --primary: #5B8DEF;
-    --primary-light: #E8F0FE;
-    --success: #34D399;
-    --warning: #FBBF24;
-    --danger: #F87171;
-    --bg: #F7F8FC;
+    --primary: #4F8C6C;
+    --primary-light: #E8F5ED;
+    --success: #4CAF50;
+    --warning: #FFA726;
+    --danger: #EF5350;
+    --bg: #F5F6F8;
     --card-bg: #FFFFFF;
-    --text: #2D3436;
-    --text-light: #636E72;
-    --border: #E2E8F0;
-    --shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.08);
-    --radius: 16px;
+    --text: #263238;
+    --text-light: #607D8B;
+    --border: #E8ECF0;
+    --shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --radius: 14px;
     --radius-sm: 10px;
 }
 
@@ -573,153 +573,6 @@ body {
     min-height: 4px;
 }
 
-/* ========== 相册页面 ========== */
-.upload-section {
-    background: var(--card-bg);
-    border-radius: var(--radius);
-    padding: 24px;
-    box-shadow: var(--shadow);
-    margin-bottom: 24px;
-}
-
-.upload-area {
-    border: 2px dashed var(--border);
-    border-radius: var(--radius-sm);
-    padding: 40px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 16px;
-}
-
-.upload-area:hover {
-    border-color: var(--primary);
-    background: var(--primary-light);
-}
-
-.upload-area .upload-icon {
-    font-size: 48px;
-    margin-bottom: 8px;
-}
-
-.upload-area p {
-    color: var(--text-light);
-    font-size: 14px;
-}
-
-.upload-area input[type="file"] {
-    display: none;
-}
-
-.upload-form-row {
-    display: flex;
-    gap: 12px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-}
-
-.photo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 20px;
-}
-
-.photo-card {
-    background: var(--card-bg);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    transition: all 0.2s;
-    position: relative;
-}
-
-.photo-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-}
-
-.photo-card img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    cursor: pointer;
-}
-
-.photo-info {
-    padding: 12px 14px;
-}
-
-.photo-caption {
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 6px;
-}
-
-.photo-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    color: var(--text-light);
-}
-
-.photo-delete {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0,0,0,0.5);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.photo-card:hover .photo-delete {
-    opacity: 1;
-}
-
-/* ========== 照片灯箱 ========== */
-.lightbox {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 999;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.lightbox.show {
-    display: flex;
-}
-
-.lightbox img {
-    max-width: 90vw;
-    max-height: 90vh;
-    border-radius: 8px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-}
-
-.lightbox-close {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    font-size: 40px;
-    color: white;
-    cursor: pointer;
-    background: none;
-    border: none;
-}
-
 /* ========== Toast 消息 ========== */
 .toast-container {
     position: fixed;
@@ -831,7 +684,7 @@ body {
 #identity-gate {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #43A047 0%, #2E7D52 100%);
     z-index: 9999;
     display: flex;
     align-items: center;
@@ -857,13 +710,13 @@ body {
 .gate-title {
     font-size: 28px;
     font-weight: 800;
-    color: #5B3E96;
+    color: #2E7D52;
     margin-bottom: 4px;
 }
 
 .gate-subtitle {
     font-size: 14px;
-    color: #8B7AAF;
+    color: #66BB6A;
     margin-bottom: 28px;
 }
 
@@ -890,8 +743,8 @@ body {
 }
 
 .gate-member-card:hover {
-    border-color: #667eea;
-    background: #F0F0FF;
+    border-color: #4F8C6C;
+    background: #E8F5ED;
     transform: translateX(4px);
 }
 
@@ -926,9 +779,9 @@ body {
 }
 
 .gate-add-btn:hover {
-    border-color: #667eea;
-    color: #667eea;
-    background: #F8F7FF;
+    border-color: #4F8C6C;
+    color: #4F8C6C;
+    background: #E8F5ED;
 }
 
 .gate-add-form {
@@ -1147,62 +1000,6 @@ body {
 
     .bar-value {
         font-size: 13px;
-    }
-
-    /* 相册 */
-    .upload-area {
-        padding: 24px 16px;
-    }
-
-    .upload-form-row {
-        flex-direction: column;
-    }
-
-    .upload-form-row .btn {
-        width: 100%;
-        min-height: 44px;
-        justify-content: center;
-        font-size: 15px;
-    }
-
-    .photo-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-    }
-
-    .photo-card img {
-        height: 140px;
-    }
-
-    .photo-info {
-        padding: 10px;
-    }
-
-    .photo-caption {
-        font-size: 13px;
-    }
-
-    .photo-meta {
-        font-size: 11px;
-    }
-
-    .photo-delete {
-        opacity: 1;
-        width: 26px;
-        height: 26px;
-        font-size: 14px;
-    }
-
-    /* Lightbox */
-    .lightbox img {
-        max-width: 95vw;
-        max-height: 80vh;
-    }
-
-    .lightbox-close {
-        top: 12px;
-        right: 16px;
-        font-size: 32px;
     }
 
     /* Toast */

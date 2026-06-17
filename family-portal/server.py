@@ -539,9 +539,6 @@ def get_stats():
         ongoing_count = db.execute(
             'SELECT COUNT(*) FROM tasks WHERE assigned_to = ? AND status = "todo"', (m['id'],)
         ).fetchone()[0]
-        photo_count = db.execute(
-            'SELECT COUNT(*) FROM photos WHERE uploaded_by = ?', (m['id'],)
-        ).fetchone()[0]
 
         stats.append({
             'member_id': m['id'],
@@ -550,19 +547,17 @@ def get_stats():
             'done_count': done_count,
             'created_count': created_count,
             'ongoing_count': ongoing_count,
-            'photo_count': photo_count,
-            'total_score': done_count * 10 + created_count * 3 + photo_count * 5
+            'total_score': done_count * 10 + created_count * 3
         })
 
     stats.sort(key=lambda x: x['total_score'], reverse=True)
 
     total_tasks = db.execute('SELECT COUNT(*) FROM tasks').fetchone()[0]
     total_done = db.execute('SELECT COUNT(*) FROM tasks WHERE status = "done"').fetchone()[0]
-    total_photos = db.execute('SELECT COUNT(*) FROM photos').fetchone()[0]
 
     return jsonify({
         'members': stats,
-        'summary': {'total_tasks': total_tasks, 'total_done': total_done, 'total_photos': total_photos}
+        'summary': {'total_tasks': total_tasks, 'total_done': total_done}
     })
 
 
