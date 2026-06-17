@@ -15,11 +15,11 @@
         <!-- 导航栏 -->
         <nav class="navbar">
             <div class="nav-brand">
-                <span class="icon">🏠</span> 东华倪家
+东华倪家
             </div>
             <div class="nav-links">
-                <a href="/" class="active">📋 任务</a>
-                <a href="/stats">📊 统计</a>
+                <a href="/" class="active">任务</a>
+                <a href="/stats">总览</a>
             </div>
             <div class="nav-user">
                 <div class="user-switcher">
@@ -33,7 +33,7 @@
         <div class="container">
             <!-- 添加任务 -->
             <div class="add-task-section">
-                <h3>📝 发布新任务</h3>
+                <h3>发布新任务</h3>
                 <div class="add-task-form">
                     <div class="form-group">
                         <label>任务标题 *</label>
@@ -51,7 +51,7 @@
             <div class="taskboard">
                 <!-- 待办 -->
                 <div class="board-column todo">
-                    <h2>⏳ 待办任务 <span class="badge badge-primary" id="todo-count">0</span></h2>
+                    <h2>待办 <span class="badge badge-primary" id="todo-count">0</span></h2>
                     <div id="todo-list">
                         <div class="empty-state">
                             <div class="empty-icon">🎉</div>
@@ -62,7 +62,7 @@
 
                 <!-- 已完成 -->
                 <div class="board-column done">
-                    <h2>✅ 已完成 <span class="badge badge-success" id="done-count">0</span></h2>
+                    <h2>已完成 <span class="badge badge-success" id="done-count">0</span></h2>
                     <div id="done-list">
                         <div class="empty-state">
                             <div class="empty-icon">📭</div>
@@ -73,7 +73,7 @@
             </div>
         </div>
 
-        <div class="footer">🏠 东华倪家 — 让家更有爱</div>
+        <div class="footer">东华倪家</div>
     </div>
 
     <script src="app.js"></script>
@@ -127,23 +127,23 @@
         }
 
         function renderTaskCard(task, type) {
-            const creatorTag = `<span class="task-tag tag-creator">📢 ${task.creator_name}</span>`;
+            const creatorTag = `<span class="task-tag tag-creator">发布: ${task.creator_name}</span>`;
             const assigneeTag = task.assignee_name
-                ? `<span class="task-tag tag-assignee">👤 ${task.assignee_name}</span>`
+                ? `<span class="task-tag tag-assignee">执行: ${task.assignee_name}</span>`
                 : '';
 
             let actions = '';
             if (type === 'todo') {
                 if (!task.assigned_to) {
-                    actions += `<button class="btn btn-outline btn-sm btn-claim" data-id="${task.id}">🙋 我来做</button>`;
+                    actions += `<button class="btn btn-outline btn-sm btn-claim" data-id="${task.id}">我来做</button>`;
                 } else {
-                    actions += `<button class="btn btn-success btn-sm btn-complete" data-id="${task.id}">✅ 完成</button>`;
-                    actions += `<button class="btn btn-outline btn-sm btn-unclaim" data-id="${task.id}">↩ 放弃</button>`;
+                    actions += `<button class="btn btn-success btn-sm btn-complete" data-id="${task.id}">完成</button>`;
+                    actions += `<button class="btn btn-outline btn-sm btn-unclaim" data-id="${task.id}">放弃</button>`;
                 }
             } else {
-                actions += `<button class="btn btn-outline btn-sm btn-reopen" data-id="${task.id}">🔄 重新打开</button>`;
+                actions += `<button class="btn btn-outline btn-sm btn-reopen" data-id="${task.id}">重新打开</button>`;
             }
-            actions += `<button class="btn btn-outline btn-sm btn-delete-task" data-id="${task.id}" style="color:var(--danger)">🗑</button>`;
+            actions += `<button class="btn btn-outline btn-sm btn-delete-task" data-id="${task.id}" style="color:var(--danger)">删除</button>`;
 
             const timeStr = type === 'done' && task.completed_at
                 ? `✅ ${task.completed_at}`

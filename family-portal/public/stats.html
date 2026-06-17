@@ -3,152 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>劳动统计 - 东华倪家</title>
+    <title>任务总览 - 东华倪家</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- 身份选择遮罩 -->
     <div id="identity-gate" class="hidden"></div>
 
-    <!-- 主内容 -->
     <div id="main-content" style="display:none">
         <nav class="navbar">
-            <div class="nav-brand">
-                <span class="icon">🏠</span> 东华倪家
-            </div>
+            <div class="nav-brand">东华倪家</div>
             <div class="nav-links">
-                <a href="/">📋 任务</a>
-                <a href="/stats" class="active">📊 统计</a>
+                <a href="/">任务</a>
+                <a href="/stats" class="active">总览</a>
             </div>
             <div class="nav-user">
                 <div class="user-switcher">
-                    <button class="current-user-badge">👤 选择身份</button>
+                    <button class="current-user-badge">选择身份</button>
                     <div class="user-dropdown"></div>
                 </div>
-                <button class="btn btn-outline btn-sm" onclick="doLogout()" style="color:var(--danger);border-color:var(--danger)">退出</button>
+                <button class="btn btn-outline btn-sm" onclick="doLogout()" style="color:var(--danger)">退出</button>
             </div>
         </nav>
 
         <div class="container">
-            <div class="stats-header">
-                <h1>📊 家庭劳动统计</h1>
-            </div>
+            <!-- 成员卡片 -->
+            <div class="member-cards" id="member-cards"></div>
 
-            <div class="stats-summary" id="summary-cards"></div>
-
-            <div class="champion-section" id="champion-section" style="display:none">
-                <div class="crown">👑</div>
-                <div class="champion-name" id="champion-name"></div>
-                <div class="champion-score" id="champion-score"></div>
-            </div>
-
-            <div class="ranking-list" id="ranking-list">
-                <h3>🏆 家庭贡献排行</h3>
-                <div id="ranking-content">
-                    <div class="empty-state">
-                        <div class="empty-icon">📊</div>
-                        <p>暂无数据</p>
-                    </div>
+            <!-- 选中成员的任务列表 -->
+            <div class="member-detail" id="member-detail" style="display:none">
+                <div class="detail-header">
+                    <button class="btn btn-outline btn-sm" id="btn-back">← 返回</button>
+                    <h2 id="detail-title"></h2>
                 </div>
-            </div>
-
-            <div class="chart-section">
-                <h3>📈 任务完成统计</h3>
-                <div class="bar-chart" id="bar-chart">
-                    <div class="empty-state"><p>暂无数据</p></div>
+                <div class="member-tasks" id="member-tasks">
+                    <div class="empty-state"><p>暂无任务记录</p></div>
                 </div>
             </div>
         </div>
-
-        <div class="footer">🏠 东华倪家 — 让家更有爱</div>
     </div>
 
     <script src="app.js"></script>
     <script>
+        let membersData = [];
+        let selectedMember = null;
+
         function onUserChanged() {
-            loadStats();
+            loadOverview();
         }
 
-        async function loadStats() {
+        async function loadOverview() {
             if (!getCurrentUserId()) return;
             try {
                 const data = await api('/stats');
-                renderStats(data);
+                membersData = data.members;
+                renderMemberCards(data.members, data.summary);
             } catch {}
         }
 
-        function renderStats(data) {
-            const { members: stats, summary } = data;
+        function renderMemberCards(members, summary) {
+            document.getElementById('member-detail').style.display = 'none';
+            selectedMember = null;
 
-            document.getElementById('summary-cards').innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-num">${summary.total_tasks}</div>
-                    <div class="stat-label">📋 总任务</div>
+            const total = summary.total_tasks || 0;
+            const done = summary.total_done || 0;
+
+            document.getElementById('member-cards').innerHTML = `
+                <div class="overview-summary">
+                    <span>共 ${total} 个任务，已完成 ${done} 个</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-num">${summary.total_done}</div>
-                    <div class="stat-label">✅ 已完成</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-num">${summary.total_tasks - summary.total_done}</div>
-                    <div class="stat-label">⏳ 进行中</div>
+                <div class="cards-grid">
+                    ${members.map(m => `
+                        <button class="member-overview-card" data-id="${m.member_id}" style="--accent:${m.color}">
+                            <div class="moc-avatar" style="background:${m.color}">${m.name[0]}</div>
+                            <div class="moc-name">${m.name}</div>
+                            <div class="moc-stats">
+                                <span>✅ ${m.done_count}</span>
+                                <span>📋 ${m.created_count}</span>
+                                <span>⏳ ${m.ongoing_count}</span>
+                            </div>
+                        </button>
+                    `).join('')}
                 </div>
             `;
 
-            if (stats.length > 0 && stats[0].total_score > 0) {
-                document.getElementById('champion-section').style.display = 'block';
-                document.getElementById('champion-name').textContent = stats[0].name;
-                document.getElementById('champion-score').textContent =
-                    `总积分：${stats[0].total_score} 分（完成 ${stats[0].done_count} 个任务 + 发布 ${stats[0].created_count} 个任务）`;
-            } else {
-                document.getElementById('champion-section').style.display = 'none';
-            }
+            document.querySelectorAll('.member-overview-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const id = parseInt(card.dataset.id);
+                    const member = members.find(m => m.member_id === id);
+                    showMemberDetail(member);
+                });
+            });
+        }
 
-            const rankEmojis = ['🥇', '🥈', '🥉'];
-            const rankClasses = ['gold', 'silver', 'bronze'];
+        async function showMemberDetail(member) {
+            selectedMember = member;
+            document.getElementById('member-cards').style.display = 'none';
+            document.getElementById('member-detail').style.display = 'block';
+            document.getElementById('detail-title').innerHTML = `
+                <span class="detail-dot" style="background:${member.color}"></span>
+                ${member.name} 的任务
+            `;
 
-            if (stats.length === 0) {
-                document.getElementById('ranking-content').innerHTML = `
-                    <div class="empty-state"><div class="empty-icon">📊</div><p>暂无数据</p></div>
-                `;
-            } else {
-                document.getElementById('ranking-content').innerHTML = stats.map((s, i) => `
-                    <div class="rank-item">
-                        <div class="rank-number ${i < 3 ? rankClasses[i] : ''}">
-                            ${i < 3 ? rankEmojis[i] : (i + 1)}
-                        </div>
-                        <div class="rank-avatar" style="background:${s.color}">
-                            ${s.name[0]}
-                        </div>
-                        <div class="rank-info">
-                            <div class="rank-name">${s.name}</div>
-                            <div class="rank-detail">
-                                完成 ${s.done_count} · 发布 ${s.created_count} · 进行中 ${s.ongoing_count}
-                            </div>
-                        </div>
-                        <div class="rank-score">${s.total_score} 分</div>
-                    </div>
-                `).join('');
-            }
-
-            const maxDone = Math.max(...stats.map(s => s.done_count), 1);
-            const chartHeight = 200;
-
-            if (stats.length === 0) {
-                document.getElementById('bar-chart').innerHTML = '<div class="empty-state"><p>暂无数据</p></div>';
-            } else {
-                document.getElementById('bar-chart').innerHTML = stats.map(s => {
-                    const height = Math.max((s.done_count / maxDone) * chartHeight, 4);
-                    return `
-                        <div class="bar-group">
-                            <div class="bar-value">${s.done_count}</div>
-                            <div class="bar" style="height:${height}px;background:${s.color}"></div>
-                            <div class="bar-label">${s.name}</div>
-                        </div>
-                    `;
-                }).join('');
+            try {
+                const tasks = await api(`/tasks/member/${member.member_id}`);
+                renderMemberTasks(tasks, member);
+            } catch {
+                document.getElementById('member-tasks').innerHTML =
+                    '<div class="empty-state"><p>加载失败</p></div>';
             }
         }
+
+        function renderMemberTasks(tasks, member) {
+            const container = document.getElementById('member-tasks');
+
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>暂无任务记录</p></div>';
+                return;
+            }
+
+            container.innerHTML = tasks.map(t => {
+                const isCreator = t.created_by === member.member_id;
+                const isAssignee = t.assigned_to === member.member_id;
+                const isDone = t.status === 'done';
+
+                let tag = '';
+                if (isCreator && isAssignee && isDone) tag = '<span class="task-badge done">自己完成</span>';
+                else if (isCreator && isAssignee) tag = '<span class="task-badge ongoing">自己待办</span>';
+                else if (isCreator) tag = '<span class="task-badge created">发布</span>';
+                else if (isAssignee && isDone) tag = '<span class="task-badge done">完成</span>';
+                else if (isAssignee) tag = '<span class="task-badge ongoing">待办</span>';
+
+                const timeStr = t.status === 'done' && t.completed_at
+                    ? t.completed_at
+                    : t.created_at;
+
+                return `
+                    <div class="member-task-item ${t.status}">
+                        <div class="mti-left">
+                            <span class="mti-title">${escapeHtml(t.title)}</span>
+                            ${t.description ? `<span class="mti-desc">${escapeHtml(t.description)}</span>` : ''}
+                        </div>
+                        <div class="mti-right">
+                            ${tag}
+                            <span class="mti-time">${timeStr}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('btn-back').addEventListener('click', () => {
+            document.getElementById('member-detail').style.display = 'none';
+            document.getElementById('member-cards').style.display = '';
+            selectedMember = null;
+        });
     </script>
 </body>
 </html>

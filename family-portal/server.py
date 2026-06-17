@@ -115,7 +115,8 @@ def init_db():
         default_members = [
             ('爸爸', MEMBER_COLORS[0]),
             ('妈妈', MEMBER_COLORS[1]),
-            ('宝贝', MEMBER_COLORS[2]),
+            ('倪大', MEMBER_COLORS[2]),
+            ('倪二', MEMBER_COLORS[3]),
         ]
         db.executemany('INSERT INTO members (name, color) VALUES (?, ?)', default_members)
 
@@ -547,10 +548,7 @@ def get_stats():
             'done_count': done_count,
             'created_count': created_count,
             'ongoing_count': ongoing_count,
-            'total_score': done_count * 10 + created_count * 3
         })
-
-    stats.sort(key=lambda x: x['total_score'], reverse=True)
 
     total_tasks = db.execute('SELECT COUNT(*) FROM tasks').fetchone()[0]
     total_done = db.execute('SELECT COUNT(*) FROM tasks WHERE status = "done"').fetchone()[0]
@@ -559,6 +557,24 @@ def get_stats():
         'members': stats,
         'summary': {'total_tasks': total_tasks, 'total_done': total_done}
     })
+
+
+@app.route('/api/tasks/member/<int:member_id>', methods=['GET'])
+@login_required
+def get_member_tasks(member_id):
+    """获取指定成员的相关任务（发布 + 认领完成）"""
+    db = get_db()
+    tasks = db.execute('''
+        SELECT t.id, t.title, t.description, t.status, t.created_at, t.completed_at,
+               c.name as creator_name, c.color as creator_color,
+               a.name as assignee_name, a.color as assignee_color
+        FROM tasks t
+        JOIN members c ON t.created_by = c.id
+        LEFT JOIN members a ON t.assigned_to = a.id
+        WHERE t.created_by = ? OR t.assigned_to = ?
+        ORDER BY t.created_at DESC
+    ''', (member_id, member_id)).fetchall()
+    return jsonify([dict(t) for t in tasks])
 
 
 # ==================== 启动 ====================
