@@ -8,3 +8,4 @@ cloudflared.exe
 uploads/
 .claude/
 data/.secret_key
+.cftoken
