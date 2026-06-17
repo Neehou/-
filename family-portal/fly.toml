@@ -1,0 +1,25 @@
+app = "donghua-ni-home"
+primary_region = "hkg"
+
+[build]
+
+[env]
+  PORT = "8080"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8080
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[mounts]
+  source = "family_data"
+  destination = "/data"
+  initial_size = "3gb"

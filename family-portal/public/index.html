@@ -80,15 +80,26 @@
     <script src="app.js"></script>
     <script>
         function onUserChanged() {
-            loadAllTasks();
+            // 延迟确保 DOM 和身份都就绪
+            setTimeout(() => loadAllTasks(), 200);
         }
 
         async function loadAllTasks() {
-            if (!getCurrentUserId()) return;
+            const uid = getCurrentUserId();
+            if (!uid) {
+                // 如果还没选身份，等1秒再试
+                setTimeout(() => loadAllTasks(), 1000);
+                return;
+            }
             try {
                 const tasks = await api('/tasks');
-                renderTasks(tasks);
-            } catch {}
+                if (tasks) renderTasks(tasks);
+            } catch (err) {
+                console.error('加载任务失败:', err);
+                // 显示错误信息
+                document.getElementById('todo-list').innerHTML =
+                    '<div class="empty-state"><div class="empty-icon">⚠️</div><p>加载失败，请刷新页面</p></div>';
+            }
         }
 
         function renderTasks(tasks) {

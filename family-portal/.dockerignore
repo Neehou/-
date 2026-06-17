@@ -1,0 +1,7 @@
+__pycache__
+*.pyc
+.git
+.ngrok_token
+start.bat
+package.json
+render.yaml

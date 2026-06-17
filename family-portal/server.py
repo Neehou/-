@@ -18,9 +18,22 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 
+# 路径配置 — Fly.io 上使用持久卷 /data，本地使用项目目录
+ON_FLY = os.environ.get('FLY_APP_NAME') is not None
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if ON_FLY:
+    DATA_DIR = '/data'
+    UPLOAD_DIR = '/data/uploads'
+else:
+    DATA_DIR = os.path.join(BASE_DIR, 'data')
+    UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
+
+DB_PATH = os.path.join(DATA_DIR, 'family.db')
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 # 密钥（用于 session 加密）
-SECRET_KEY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', '.secret_key')
-os.makedirs(os.path.dirname(SECRET_KEY_FILE), exist_ok=True)
+SECRET_KEY_FILE = os.path.join(DATA_DIR, '.secret_key')
 if os.path.exists(SECRET_KEY_FILE):
     with open(SECRET_KEY_FILE, 'r') as f:
         app.secret_key = f.read().strip()
@@ -28,14 +41,6 @@ else:
     app.secret_key = secrets.token_hex(32)
     with open(SECRET_KEY_FILE, 'w') as f:
         f.write(app.secret_key)
-
-# 路径配置
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_DIR = os.path.join(BASE_DIR, 'data')
-DB_PATH = os.path.join(DB_DIR, 'family.db')
-UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
-os.makedirs(DB_DIR, exist_ok=True)
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 MEMBER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#FF9FF3', '#54A0FF']
 
@@ -575,56 +580,13 @@ def get_local_ip():
         return None
 
 
-def get_ngrok_token():
-    for i, arg in enumerate(sys.argv):
-        if arg == '--token' and i + 1 < len(sys.argv):
-            return sys.argv[i + 1]
-    token = os.environ.get('NGROK_AUTH_TOKEN')
-    if token:
-        return token
-    token_file = os.path.join(BASE_DIR, '.ngrok_token')
-    if os.path.exists(token_file):
-        try:
-            with open(token_file, 'r', encoding='utf-8') as f:
-                return f.read().strip()
-        except Exception:
-            pass
-    return None
-
-
-def start_ngrok():
-    token = get_ngrok_token()
-    if not token:
-        return None
-    try:
-        from pyngrok import ngrok, conf
-        conf.get_default().auth_token = token
-        tunnel = ngrok.connect(5000, "http")
-        return tunnel.public_url
-    except Exception as e:
-        print(f'  [ngrok 启动失败] {e}')
-        return None
-
-
 if __name__ == '__main__':
     local_ip = get_local_ip()
-    public_url = start_ngrok()
 
+    print()
     print('=' * 55)
     print('       东华倪家 - 家庭门户网站')
     print('=' * 55)
-
-    if public_url:
-        print(f'  [公网访问] {public_url}')
-        print(f'     任何人、任何地方都可以打开！')
-        print()
-    else:
-        print(f'  [提示] 配置 ngrok 即可从外网访问')
-        print(f'     1. 注册: https://ngrok.com')
-        print(f'     2. 创建 .ngrok_token 文件并粘贴 token')
-        print(f'     3. 重新启动')
-        print()
-
     if local_ip:
         print(f'  [局域网] http://{local_ip}:5000')
     print(f'  [本机]   http://localhost:5000')
@@ -632,4 +594,4 @@ if __name__ == '__main__':
     print(f'  首次使用需设置管理员账号密码')
     print('  按 Ctrl+C 停止服务')
     print('=' * 55)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
